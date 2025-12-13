@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Campus Event Finder</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;}
+    h1 { margin: 0; font-size: 1.6rem; }
+    .controls { margin-bottom: 12px; }
+    .event-card { border:1px solid #ddd; padding:12px; margin-bottom:10px; border-radius:8px; cursor:pointer }
+    .event-title { font-weight:600; }
+    .meta { color: #555; font-size:0.9rem; margin-top:6px; }
+    #details { border:1px solid #ccc; padding:12px; margin-top:12px; border-radius:8px; display:none }
+    .filter { padding:6px; }
+    .no-events { color:#888; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Campus Event Finder</h1>
+    <div>Phase 1 Demo</div>
+  </header>
+
+  <div class="controls">
+    <label>
+      Category:
+      <select id="categoryFilter" class="filter">
+        <option value="">All</option>
+      </select>
+    </label>
+    <input id="search" placeholder="Search events..." style="padding:6px; margin-left:8px;" />
+    <button id="refresh" style="padding:6px; margin-left:8px;">Refresh</button>
+  </div>
+
+  <div id="eventsList"></div>
+
+  <div id="details"></div>
+
+  <script>
+    const API_BASE = "/api";
+
+    let events = [];
+
+    async function fetchEvents() {
+      try {
+        const res = await fetch(API_BASE + "/events");
+        if (!res.ok) throw new Error("Failed to fetch events");
+        events = await res.json();
+        renderFilters();
+        renderList();
+      } catch (err) {
+        document.getElementById('eventsList').innerHTML = "<div class='no-events'>Unable to load events.</div>";
+        console.error(err);
+      }
+    }
+
+    function uniqueCategories() {
+      const set = new Set();
+      events.forEach(e => set.add(e.category || "General"));
+      return Array.from(set).sort();
+    }
+
+    function renderFilters() {
+      const sel = document.getElementById("categoryFilter");
+      const cats = uniqueCategories();
+      // Clear old options (except All)
+      sel.innerHTML = '<option value="">All</option>';
+      cats.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.innerText = c;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderList() {
+      const list = document.getElementById("eventsList");
+      const sel = document.getElementById("categoryFilter").value;
+      const q = document.getElementById("search").value.trim().toLowerCase();
+
+      const filtered = events.filter(e => {
+        const matchCat = sel === "" || (e.category || "General") === sel;
+        const matchQ = q === "" || (e.title || "").toLowerCase().includes(q) || (e.description || "").toLowerCase().includes(q);
+        return matchCat && matchQ;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = "<div class='no-events'>No events found.</div>";
+        document.getElementById("details").style.display = "none";
+        return;
+      }
+
+      list.innerHTML = "";
+      filtered.forEach(ev => {
+        const card = document.createElement("div");
+        card.className = "event-card";
+        card.onclick = () => loadDetails(ev.id);
+
+        const title = document.createElement("div");
+        title.className = "event-title";
+        title.innerText = ev.title;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerText = `${ev.date} ${ev.time ? "• " + ev.time : ""} • ${ev.category}`;
+
+        card.appendChild(title);
+        card.appendChild(meta);
+        list.appendChild(card);
+      });
+    }
+
+    async function loadDetails(id) {
+      try {
+        const res = await fetch(API_BASE + "/events/" + id);
+        if (!res.ok) throw new Error("Failed to fetch details");
+        const ev = await res.json();
+        const details = document.getElementById("details");
+        details.style.display = "block";
+        details.innerHTML = `<h3>${ev.title}</h3>
+          <div><strong>Date:</strong> ${ev.date} ${ev.time ? ev.time : ""}</div>
+          <div><strong>Location:</strong> ${ev.location || "TBA"}</div>
+          <div><strong>Category:</strong> ${ev.category}</div>
+          <div style="margin-top:8px">${ev.description || ""}</div>
+          <div style="margin-top:10px"><em>Organizer: ${ev.organizer || "Unknown"}</em></div>
+        `;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById("categoryFilter").addEventListener("change", renderList);
+    document.getElementById("search").addEventListener("input", renderList);
+    document.getElementById("refresh").addEventListener("click", fetchEvents);
+
+    
+    fetchEvents();
+  </script>
+</body>
+</html>
