@@ -45,7 +45,7 @@ def get_sample_events() -> List[Event]:
             title="AI & ML Workshop",
             description="Hands-on workshop: Intro to Python for ML, basics of TensorFlow and scikit-learn.",
             category="Tech",
-            date="2025-03-10",
+            date="2025-12-10",
             time="14:00",
             location="Engineering Lab A",
             organizer="Computer Science Club",
@@ -53,8 +53,19 @@ def get_sample_events() -> List[Event]:
             updated_at=now
         ),
         Event(
+            title="Basketball",
+            description="Basketball CUP to play, score and win good prizes",
+            category="Sports",
+            date="2025-12-12",
+            time="14:00",
+            location="Basketball court",
+            organizer="NU CLUB",
+            created_at=now,
+            updated_at=now
+        ),
+        Event(
             title="Football Friendly",
-            description="Inter-faculty friendly match. All students welcome to attend or play.",
+            description="Inter-faculty friendly match. All students welcome to attend or play. scoring GOALS",
             category="Sports",
             date="2025-03-12",
             time="17:00",

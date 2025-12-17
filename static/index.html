@@ -1,142 +1,136 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Campus Event Finder</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
-    header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;}
-    h1 { margin: 0; font-size: 1.6rem; }
-    .controls { margin-bottom: 12px; }
-    .event-card { border:1px solid #ddd; padding:12px; margin-bottom:10px; border-radius:8px; cursor:pointer }
-    .event-title { font-weight:600; }
-    .meta { color: #555; font-size:0.9rem; margin-top:6px; }
-    #details { border:1px solid #ccc; padding:12px; margin-top:12px; border-radius:8px; display:none }
-    .filter { padding:6px; }
-    .no-events { color:#888; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #0f172a, #020617);
+      color: #e5e7eb;
+    }
+    header {
+      padding: 2rem;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    header h1 { font-size: 2.5rem; margin: 0; }
+    header p { margin-top: 0.5rem; color: #94a3b8; }
+    .controls {
+      max-width: 1100px;
+      margin: 2rem auto 0;
+      padding: 0 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    input, select {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: #1e293b;
+      color: #e5e7eb;
+    }
+    main {
+      max-width: 1100px;
+      margin: 1.5rem auto 2rem;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.9);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      transition: transform 0.25s ease;
+    }
+    .card:hover { transform: translateY(-6px); }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      background: #2563eb;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .card h2 { font-size: 1.3rem; margin: 0.5rem 0; }
+    .card p { font-size: 0.95rem; color: #cbd5f5; }
+    .meta { margin-top: 1rem; font-size: 0.85rem; color: #94a3b8; }
+    footer { text-align: center; padding: 2rem; color: #64748b; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Campus Event Finder</h1>
-    <div>Phase 1 Demo</div>
-  </header>
 
-  <div class="controls">
-    <label>
-      Category:
-      <select id="categoryFilter" class="filter">
-        <option value="">All</option>
-      </select>
-    </label>
-    <input id="search" placeholder="Search events..." style="padding:6px; margin-left:8px;" />
-    <button id="refresh" style="padding:6px; margin-left:8px;">Refresh</button>
-  </div>
+<header>
+  <h1>Campus Event Finder</h1>
+  <p>Discover what's happening on campus</p>
+</header>
 
-  <div id="eventsList"></div>
+<div class="controls">
+  <input type="text" id="search" placeholder="Search events..." />
+  <select id="category">
+    <option value="">All Categories</option>
+    <option value="Tech">Tech</option>
+    <option value="Sports">Sports</option>
+    <option value="Social">Social</option>
+  </select>
+</div>
 
-  <div id="details"></div>
+<main id="events"></main>
 
-  <script>
-    const API_BASE = "/api";
+<footer>2025 Campus Event Finder</footer>
 
-    let events = [];
+<script>
+  const eventsContainer = document.getElementById("events");
+  const searchInput = document.getElementById("search");
+  const categorySelect = document.getElementById("category");
 
-    async function fetchEvents() {
-      try {
-        const res = await fetch(API_BASE + "/events");
-        if (!res.ok) throw new Error("Failed to fetch events");
-        events = await res.json();
-        renderFilters();
-        renderList();
-      } catch (err) {
-        document.getElementById('eventsList').innerHTML = "<div class='no-events'>Unable to load events.</div>";
-        console.error(err);
-      }
-    }
+  let allEvents = [];
 
-    function uniqueCategories() {
-      const set = new Set();
-      events.forEach(e => set.add(e.category || "General"));
-      return Array.from(set).sort();
-    }
+  async function loadEvents() {
+    const res = await fetch("/api/events");
+    allEvents = await res.json();
+    renderEvents();
+  }
 
-    function renderFilters() {
-      const sel = document.getElementById("categoryFilter");
-      const cats = uniqueCategories();
-      // Clear old options (except All)
-      sel.innerHTML = '<option value="">All</option>';
-      cats.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.innerText = c;
-        sel.appendChild(opt);
-      });
-    }
+  function renderEvents() {
+    const search = searchInput.value.toLowerCase();
+    const category = categorySelect.value;
 
-    function renderList() {
-      const list = document.getElementById("eventsList");
-      const sel = document.getElementById("categoryFilter").value;
-      const q = document.getElementById("search").value.trim().toLowerCase();
+    eventsContainer.innerHTML = "";
 
-      const filtered = events.filter(e => {
-        const matchCat = sel === "" || (e.category || "General") === sel;
-        const matchQ = q === "" || (e.title || "").toLowerCase().includes(q) || (e.description || "").toLowerCase().includes(q);
-        return matchCat && matchQ;
-      });
-
-      if (filtered.length === 0) {
-        list.innerHTML = "<div class='no-events'>No events found.</div>";
-        document.getElementById("details").style.display = "none";
-        return;
-      }
-
-      list.innerHTML = "";
-      filtered.forEach(ev => {
+    allEvents
+      .filter(ev => ev.title.toLowerCase().includes(search))
+      .filter(ev => !category || ev.category === category)
+      .forEach(ev => {
         const card = document.createElement("div");
-        card.className = "event-card";
-        card.onclick = () => loadDetails(ev.id);
-
-        const title = document.createElement("div");
-        title.className = "event-title";
-        title.innerText = ev.title;
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.innerText = `${ev.date} ${ev.time ? "• " + ev.time : ""} • ${ev.category}`;
-
-        card.appendChild(title);
-        card.appendChild(meta);
-        list.appendChild(card);
-      });
-    }
-
-    async function loadDetails(id) {
-      try {
-        const res = await fetch(API_BASE + "/events/" + id);
-        if (!res.ok) throw new Error("Failed to fetch details");
-        const ev = await res.json();
-        const details = document.getElementById("details");
-        details.style.display = "block";
-        details.innerHTML = `<h3>${ev.title}</h3>
-          <div><strong>Date:</strong> ${ev.date} ${ev.time ? ev.time : ""}</div>
-          <div><strong>Location:</strong> ${ev.location || "TBA"}</div>
-          <div><strong>Category:</strong> ${ev.category}</div>
-          <div style="margin-top:8px">${ev.description || ""}</div>
-          <div style="margin-top:10px"><em>Organizer: ${ev.organizer || "Unknown"}</em></div>
+        card.className = "card";
+        card.innerHTML = `
+          <span class="badge">${ev.category}</span>
+          <h2>${ev.title}</h2>
+          <p>${ev.description}</p>
+          <div class="meta">📅 ${ev.date} · ⏰ ${ev.time} · 📍 ${ev.location}</div>
         `;
-      } catch (err) {
-        console.error(err);
-      }
-    }
+        eventsContainer.appendChild(card);
+      });
+  }
 
-    document.getElementById("categoryFilter").addEventListener("change", renderList);
-    document.getElementById("search").addEventListener("input", renderList);
-    document.getElementById("refresh").addEventListener("click", fetchEvents);
+  searchInput.addEventListener("input", renderEvents);
+  categorySelect.addEventListener("change", renderEvents);
 
-    
-    fetchEvents();
-  </script>
+  loadEvents();
+</script>
+
 </body>
 </html>
