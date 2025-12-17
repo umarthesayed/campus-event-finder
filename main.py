@@ -54,7 +54,7 @@ def get_sample_events() -> List[Event]:
         ),
         Event(
             title="Basketball",
-            description="Basketball CUP to play and win good prizes",
+            description="Basketball CUP to play, score and win good prizes",
             category="Sports",
             date="2025-12-12",
             time="14:00",
