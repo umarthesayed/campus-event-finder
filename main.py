@@ -53,11 +53,7 @@ def get_sample_events() -> List[Event]:
             updated_at=now
         ),
         Event(
-<<<<<<< HEAD
-            title="Basketball Cup Finals",
-=======
-            title="Basketball",
->>>>>>> 9c41de3800a720969d29b00058feab05ca18e63f
+            title="Basketball Finals",
             description="Basketball CUP to play, score and win good prizes",
             category="Sports",
             date="2025-12-12",
